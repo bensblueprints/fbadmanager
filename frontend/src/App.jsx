@@ -5,6 +5,7 @@ import Campaigns from './pages/Campaigns';
 import AdSets from './pages/AdSets';
 import Insights from './pages/Insights';
 import Audiences from './pages/Audiences';
+import Settings from './pages/Settings';
 import AccountSelector from './components/AccountSelector';
 
 const API = '/api/meta';
@@ -14,22 +15,25 @@ const navItems = [
   { to: '/campaigns', label: 'Campaigns' },
   { to: '/insights', label: 'Insights' },
   { to: '/audiences', label: 'Audiences' },
+  { to: '/settings', label: 'Settings' },
 ];
 
 export default function App() {
   const [accounts, setAccounts] = useState([]);
   const [selectedAccount, setSelectedAccount] = useState(null);
 
-  useEffect(() => {
+  const loadAccounts = () => {
     fetch(`${API}/accounts`)
       .then((r) => r.json())
       .then((d) => {
         const list = d.data || [];
         setAccounts(list);
-        if (list.length > 0) setSelectedAccount(list[0].account_id);
+        if (list.length > 0 && !selectedAccount) setSelectedAccount(list[0].account_id);
       })
       .catch(console.error);
-  }, []);
+  };
+
+  useEffect(() => { loadAccounts(); }, []);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -68,11 +72,19 @@ export default function App() {
             <Route path="/campaigns/:campaignId/adsets" element={<AdSets />} />
             <Route path="/insights" element={<Insights accountId={selectedAccount} />} />
             <Route path="/audiences" element={<Audiences accountId={selectedAccount} />} />
+            <Route path="/settings" element={<Settings onTokenChange={loadAccounts} />} />
           </Routes>
         ) : (
-          <div className="text-center py-20 text-gray-500">
-            {accounts.length === 0 ? 'Loading ad accounts...' : 'Select an ad account to get started.'}
-          </div>
+          <Routes>
+            <Route path="/settings" element={<Settings onTokenChange={loadAccounts} />} />
+            <Route path="*" element={
+              <div className="text-center py-20 text-gray-500">
+                {accounts.length === 0
+                  ? <span>No ad accounts loaded. <a href="/settings" className="text-blue-600 underline">Add your access token in Settings</a> to get started.</span>
+                  : 'Select an ad account to get started.'}
+              </div>
+            } />
+          </Routes>
         )}
       </main>
     </div>

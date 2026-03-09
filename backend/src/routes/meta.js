@@ -4,9 +4,30 @@ import axios from 'axios';
 const router = Router();
 const BASE = 'https://graph.facebook.com/v21.0';
 
+// Runtime-configurable tokens (seeded from .env)
+let runtimeToken = process.env.META_ACCESS_TOKEN || '';
+let runtimeAppId = process.env.META_APP_ID || '';
+
 function token() {
-  return process.env.META_ACCESS_TOKEN;
+  return runtimeToken;
 }
+
+// GET current settings (masked token for security)
+router.get('/settings', (req, res) => {
+  res.json({
+    access_token: runtimeToken ? `${runtimeToken.slice(0, 10)}...${runtimeToken.slice(-4)}` : '',
+    access_token_set: !!runtimeToken,
+    app_id: runtimeAppId,
+  });
+});
+
+// POST update settings
+router.post('/settings', (req, res) => {
+  const { access_token, app_id } = req.body;
+  if (access_token !== undefined) runtimeToken = access_token;
+  if (app_id !== undefined) runtimeAppId = app_id;
+  res.json({ success: true, access_token_set: !!runtimeToken, app_id: runtimeAppId });
+});
 
 function meta(path, params = {}) {
   return axios.get(`${BASE}${path}`, {
